@@ -30,7 +30,7 @@ namespace aini {
 		std::string get_string(const char* key, const char* section = default_section_name);
 		std::string get_value_as_string(const char* key, const char* section = default_section_name);
 
-		private:
+	private:
 		using Section = std::unordered_map<std::string, std::string>;
 
 		std::unordered_map<std::string, Section> sections;
@@ -43,24 +43,31 @@ namespace aini {
 		void set_string(const char* key, std::string const& value, const char* section = default_section_name);
 
 		std::string write();
-		
+
 	private:
 		using Section = std::unordered_map<std::string, std::variant<std::string, Int_t, Float_t>>;
 
 		std::unordered_map<std::string, Section> sections;
 	};
-
+}
 	
 #ifdef AINI_IMPLEMENTATION
 #include <ctype.h>
 #include <algorithm>
 
-	static bool valid_key_char(char c)
+namespace aini
+{
+	static bool valid_value_char(char c)
 	{
 		return isalnum(c) || c == '.' || c == '-';
 	}
+
+	static bool valid_key_char(char c)
+	{
+		return isalnum(c) || c == '_' || c == '-';
+	}
 	
-	inline Reader::Reader(std::string const& conf)
+	Reader::Reader(std::string const& conf)
 	{
 		size_t index = 0;
 		std::string current_session_name = default_section_name;
@@ -87,7 +94,7 @@ namespace aini {
 			else if (isalnum(conf[index])) // parse pair
 			{
 				size_t const start_key = index++;
-				while (index < conf.size() && isalnum(conf[index])) { index++; }
+				while (index < conf.size() && valid_key_char(conf[index])) { index++; }
 				std::string const key(&conf[start_key], index - start_key);
 
 				// skip spaces
@@ -108,7 +115,7 @@ namespace aini {
 					strip = 1;
 				}
 				else
-					while (index < conf.size() && valid_key_char(conf[index])) { index++; }
+					while (index < conf.size() && valid_value_char(conf[index])) { index++; }
 				
 				std::string const value(&conf[start_value + strip], index - start_value - 2 * strip);
 
@@ -118,12 +125,12 @@ namespace aini {
 		}
 	}
 
-	inline bool Reader::has_key(const char* key, const char* section)
+	bool Reader::has_key(const char* key, const char* section)
 	{
 		return sections[section].contains(key);
 	}
 
-	inline ValueType Reader::get_value_type(const char* key, const char* section)
+	ValueType Reader::get_value_type(const char* key, const char* section)
 	{
 		auto const& value = sections[section][key];
 		if (isalnum(value[0]))
@@ -135,42 +142,42 @@ namespace aini {
 		return ValueType::String;
 	}
 
-	inline Int_t Reader::get_int(const char* key, const char* section)
+	Int_t Reader::get_int(const char* key, const char* section)
 	{
 		return static_cast<Int_t>(std::stoll(sections[section][key]));
 	}
 
-	inline Float_t Reader::get_float(const char* key, const char* section)
+	Float_t Reader::get_float(const char* key, const char* section)
 	{
 		return static_cast<Float_t>(std::stod(sections[section][key]));
 	}
 
-	inline std::string Reader::get_value_as_string(const char* key, const char* section)
+	std::string Reader::get_value_as_string(const char* key, const char* section)
 	{
 		return sections[section][key];
 	}
 	
-	inline std::string Reader::get_string(const char* key, const char* section)
+	std::string Reader::get_string(const char* key, const char* section)
 	{
 		return get_value_as_string(key, section);
 	}
 
-	inline void Writer::set_int(const char* key, Int_t value, const char* section)
+	void Writer::set_int(const char* key, Int_t value, const char* section)
 	{
 		sections[section][key] = value;
 	}
 
-	inline void Writer::set_float(const char* key, Float_t value, const char* section)
+	void Writer::set_float(const char* key, Float_t value, const char* section)
 	{
 		sections[section][key] = value;
 	}
 
-	inline void Writer::set_string(const char* key, std::string const& value, const char* section)
+	void Writer::set_string(const char* key, std::string const& value, const char* section)
 	{
 		sections[section][key] = value;
 	}
 
-	inline std::string Writer::write()
+	std::string Writer::write()
 	{
 		std::string data;
 
@@ -197,9 +204,8 @@ namespace aini {
 
 		return data;
 	}
-	
-#endif
-
 }
+#endif // AINI_IMPLEMENTATION
+
 
 #endif
